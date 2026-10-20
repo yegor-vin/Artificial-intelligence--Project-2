@@ -37,7 +37,7 @@ def main():
 
     for s in stonesCoords:
         x, y = s
-        gardenMatrix[x][y] = -1
+        gardenMatrix[y][x] = -1
 
     maxFitness = matrixWidth * matrixHeight - numberOfStones
 
@@ -64,7 +64,7 @@ def generateChromosomes(genesNumber, populationSize, perimeter):
 
     for i in range(0, populationSize):
         for j in range(0,genesNumber):
-            generatedChromosomes[i][j] = random.randint(1, perimeter)
+            generatedChromosomes[i][j] = random.randint(0, perimeter - 1)
 
     return generatedChromosomes
 
@@ -77,86 +77,111 @@ def performRake(garden, population, width, height, perimeter):
 
     results = []
     for chromosome in population:
+        print("////")
         for gene in chromosome:
 
-            if 1 <= gene <= height:
+            if 0 <= gene < height:
                 x, y = (0, gene)
-                if gardenCopy[x][y] == 1 or gardenCopy[x][y] == -1:
+                print(f'{gene}')
+
+                ##TODO: problem with indexes
+                if gardenCopy[y][x] == 1 or gardenCopy[y][x] == -1:
                     continue
 
                 for i in range(0, width):
-                    gardenCopy[x + i][y] = 1
+                    gardenCopy[y][x + i] = gene
                     nextX = x+i+1
                     nextY = y+1
                     prevY = y-1
-                    if nextX < width and (gardenCopy[nextX][y] == -1 or gardenCopy[nextX][y] == 1):
-                        if nextY < height and (gardenCopy[x+i][y+1] != -1 and gardenCopy[x+i][y+1] != 1):
+                    if nextX < width and (gardenCopy[y][nextX] == -1 or gardenCopy[y][nextX] == 1):
+                        if nextY < height and (gardenCopy[y+1][x+i] != -1 and gardenCopy[y+1][x+i] != 1):
                             y += 1
-                            gardenCopy[x+i][y] = 1
-                        elif prevY > 0 and (gardenCopy[x+i][y-1] != -1 and gardenCopy[x+i][y-1] != 1):
+                            gardenCopy[y][x+i] = 1
+                        elif prevY >= 0 and (gardenCopy[y-1][x+i] != -1 and gardenCopy[y-1][x+i] != 1):
                             y -= 1
-                            gardenCopy[x+i][y] = 1
+                            gardenCopy[y][x+i] = 1
+                        else:
+                            print('stuck')
+                            break
 
 
-            elif height < gene <= perimeter // 2:
-                x, y = (gene - height, height)
-                if gardenCopy[x][y] == 1 or gardenCopy[x][y] == -1:
+            elif height <= gene < perimeter // 2:
+                x, y = (gene - height, height - 1)
+                print(f'{gene}')
+
+
+                if gardenCopy[y][x] == 1 or gardenCopy[y][x] == -1:
                     continue
 
 
                 for i in range(0, height):
-                    gardenCopy[x][y-i] = 1
+                    gardenCopy[y-i][x] = gene
                     nextY = y-i-1
                     nextX = x + 1
                     prevX = x -1
-                    if nextY > 0 and (gardenCopy[x][nextY] == -1 or gardenCopy[x][nextY] == 1):
-                        if prevX > 0 and (gardenCopy[x-1][y-i] != -1 and gardenCopy[x-1][y-i] != 1):
+                    if nextY >= 0 and (gardenCopy[nextY][x] == -1 or gardenCopy[nextY][x] == 1):
+                        if prevX >= 0 and (gardenCopy[y-i][x-1] != -1 and gardenCopy[y-i][x-1] != 1):
                             x -= 1
-                            gardenCopy[x][y-i] = 1
-                        elif nextX < width and (gardenCopy[x+1][y - i] != -1 and gardenCopy[x+1][y - i] != 1):
+                            gardenCopy[y-i][x] = 1
+                        elif nextX < width and (gardenCopy[y - i][x+1] != -1 and gardenCopy[y - i][x+1] != 1):
                             x += 1
-                            gardenCopy[x][y-i] = 1
+                            gardenCopy[y-i][x] = 1
+                        else:
+                           print('stuck')
+                           break
 
 
 
-            elif perimeter // 2 < gene <=  (perimeter // 2) + height:
-                x, y = (width - 1, abs((gene - perimeter // 2) - height))
-                if gardenCopy[x][y] == 1 or gardenCopy[x][y] == -1:
+            elif perimeter // 2 <= gene <  (perimeter // 2) + height:
+                x, y = (width - 1,abs((gene - perimeter // 2) - height) - 1)
+                print(f'{gene}')
+
+
+                if gardenCopy[y][x] == 1 or gardenCopy[y][x] == -1:
                     continue
 
 
                 for i in range(0, width):
-                    gardenCopy[x - i][y] = 1
+                    gardenCopy[y][x - i] = gene
                     nextX = x-i-1
                     nextY = y+1
                     prevY = y-1
-                    if nextX > 0 and (gardenCopy[nextX][y] == -1 or gardenCopy[nextX][y] == 1):
-                        if nextY < height and (gardenCopy[x - i][y + 1] != -1 and gardenCopy[x - i][y + 1] != 1):
+                    if nextX >= 0 and (gardenCopy[y][nextX] == -1 or gardenCopy[y][nextX] == 1):
+                        if nextY < height and (gardenCopy[y + 1][x - i] != -1 and gardenCopy[y + 1][x - i] != 1):
                             y += 1
-                            gardenCopy[x - i][y] = 1
-                        elif prevY > 0 and (gardenCopy[x - i][y - 1] != -1 and gardenCopy[x - i][y - 1] != 1):
+                            gardenCopy[y][x - i] = 1
+                        elif prevY >= 0 and (gardenCopy[y - 1][x - i] != -1 and gardenCopy[y - 1][x - i] != 1):
                             y -= 1
-                            gardenCopy[x - i][y] = 1
+                            gardenCopy[y][x - i] = 1
+                        else:
+                            print('stuck')
+                            break
 
-            elif (perimeter // 2) + height < gene <= perimeter:
-                x, y = (abs(perimeter - gene), 0)
-                if gardenCopy[x][y] == 1 or gardenCopy[x][y] == -1:
+            elif (perimeter // 2) + height <= gene < perimeter:
+                x, y = ( abs(perimeter - gene) - 1, 0)
+                print(f'{gene}')
+
+
+                if gardenCopy[y][x] == 1 or gardenCopy[y][x] == -1:
                     continue
 
                 for i in range(0, height):
-                    gardenCopy[x][y+i] = 1
+                    gardenCopy[y+i][x] = gene
                     nextY = y+i+1
                     nextX = x+1
                     prevX = x-1
-                    if nextY < height and  (gardenCopy[x][nextY] == -1 or gardenCopy[x][nextY] == 1):
-                        if prevX > 0 and (gardenCopy[x-1][y+i] != -1 and gardenCopy[x-1][y+i] != 1):
+                    if nextY < height and  (gardenCopy[nextY][x] == -1 or gardenCopy[nextY][x] == 1):
+                        if prevX >= 0 and (gardenCopy[y+i][x-1] != -1 and gardenCopy[y+i][x-1] != 1):
                             x -= 1
-                            gardenCopy[x][y+i] = 1
-                        elif nextX < width and (gardenCopy[x+1][y + i] != -1 and gardenCopy[x+1][y + i] != 1):
+                            gardenCopy[y+i][x] = 1
+                        elif nextX < width and (gardenCopy[y + i][x+1] != -1 and gardenCopy[y + i][x+1] != 1):
                             x += 1
-                            gardenCopy[x][y+i] = 1
+                            gardenCopy[y+i][x] = 1
+                        else:
+                            print('stuck')
+                            break
 
-        computeFitness(gardenCopy, width, height)
+        results.append(computeFitness(gardenCopy, width, height))
 
 
 
@@ -170,6 +195,10 @@ def computeFitness(garden, width, height):
         for j in range(0, width):
             if garden[i][j] == 1:
                 counter += 1
+            print(garden[i][j], end=" ")
+        print("\n")
+
+    print(counter)
 
     return counter
 
