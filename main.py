@@ -1,13 +1,23 @@
 import random
 
-
+SELECTION_METHODS = ["tournament", "rank"]
 
 def main():
 
-    populations = [2,3]
+    populations = [5,8]
     matrixWidth = int(input("Enter garden width: "))
     matrixHeight = int(input("Enter garden height: "))
     numberOfStones = int (input("Enter number of stones: "))
+    selectionNumber = int(input("Enter selection number 0 - tournament, 1 - rank: "))
+
+    if selectionNumber != 0 and selectionNumber != 1:
+        while True:
+            print("Invalid selection number. try again")
+            selectionNumber = int(input("Enter selection number 0 - tournament, 1 - rank: "))
+            if selectionNumber == 0 or selectionNumber == 1:
+                break
+
+
     stonesCoords = []
 
     for i in range(numberOfStones):
@@ -43,16 +53,49 @@ def main():
 
     matrixPerimeter = (matrixWidth + matrixHeight) * 2
     maxNumberOfGenes = matrixPerimeter // 2 + numberOfStones
+    numberOfGenes =  1 if matrixWidth == 1 and matrixHeight == 1 else random.randint(4, maxNumberOfGenes)
+    selection = SELECTION_METHODS[selectionNumber]
 
     for populationSize in populations:
-       population = generateChromosomes(maxNumberOfGenes, populationSize, matrixPerimeter)
+       population = generateChromosomes(numberOfGenes, populationSize, matrixPerimeter)
 
        fitnessValues = performRake(gardenMatrix, population, matrixWidth, matrixHeight, matrixPerimeter)
+       bestFitness = max(fitnessValues)
+       generation = 0
+
+       if bestFitness == maxFitness:
+           return population[fitnessValues.index(bestFitness)]
+
+       while bestFitness != maxFitness or generation == 15:
+           if selection == "tournament":
+               selectedPopulation = selectTournament(fitnessValues, population, 2)
+           else:
+               selectedPopulation = selectRank(fitnessValues, population)
 
 
 
 
 
+def geneticAlgorithm(population, fitness):
+
+
+
+
+def selectTournament(fitness, population, k=2):
+    newPopulation = []
+    for _ in range(len(population)):
+        chosen = random.choices(fitness, k=k)
+        newPopulation.append(population[fitness.index(max(chosen))])
+    return newPopulation
+
+def selectRank(fitness, population):
+    newPopulation = []
+    ordered = sorted(range(len(population)), key=lambda i: fitness[i])
+    ranks = [i + 1 for i in range(len(ordered))]
+    for _ in range(len(population)):
+        chosen = random.choices(ordered, weights=ranks, k=1)[0]
+        newPopulation.append(population[chosen])
+    return newPopulation
 
 
 def generateChromosomes(genesNumber, populationSize, perimeter):
@@ -60,7 +103,6 @@ def generateChromosomes(genesNumber, populationSize, perimeter):
     [0] * genesNumber
     for _ in range(populationSize)
     ]
-
 
     for i in range(0, populationSize):
         for j in range(0,genesNumber):
@@ -77,12 +119,10 @@ def performRake(garden, population, width, height, perimeter):
 
     results = []
     for chromosome in population:
-        print("////")
         for gene in chromosome:
 
             if 0 <= gene < height:
                 x, y = (0, gene)
-                print(f'{gene}')
 
                 if gardenCopy[y][x] != 0 or gardenCopy[y][x] == -1:
                     continue
@@ -102,7 +142,6 @@ def performRake(garden, population, width, height, perimeter):
                             y -= 1
                             gardenCopy[y][x+i] = 1
                         else:
-                            print('stuck')
                             break
                     else:
                         i += 1
@@ -110,7 +149,6 @@ def performRake(garden, population, width, height, perimeter):
 
             elif height <= gene < perimeter // 2:
                 x, y = (gene - height, height - 1)
-                print(f'{gene}')
 
 
                 if gardenCopy[y][x] != 0 or gardenCopy[y][x] == -1:
@@ -130,7 +168,6 @@ def performRake(garden, population, width, height, perimeter):
                             x += 1
                             gardenCopy[y-i][x] = 1
                         else:
-                           print('stuck')
                            break
                     else:
                         i += 1
@@ -139,7 +176,6 @@ def performRake(garden, population, width, height, perimeter):
 
             elif perimeter // 2 <= gene <  (perimeter // 2) + height:
                 x, y = (width - 1,abs((gene - perimeter // 2) - height) - 1)
-                print(f'{gene}')
 
 
                 if gardenCopy[y][x] != 0 or gardenCopy[y][x] == -1:
@@ -159,14 +195,12 @@ def performRake(garden, population, width, height, perimeter):
                             y -= 1
                             gardenCopy[y][x - i] = 1
                         else:
-                            print('stuck')
                             break
                     else:
                         i += 1
 
             elif (perimeter // 2) + height <= gene < perimeter:
                 x, y = ( abs(perimeter - gene) - 1, 0)
-                print(f'{gene}')
 
 
                 if gardenCopy[y][x] != 0 or gardenCopy[y][x] == -1:
@@ -186,13 +220,12 @@ def performRake(garden, population, width, height, perimeter):
                             x += 1
                             gardenCopy[y+i][x] = 1
                         else:
-                            print('stuck')
                             break
                     else:
                         i += 1
 
         results.append(computeFitness(gardenCopy, width, height))
-
+    return results
 
 
 
@@ -205,11 +238,6 @@ def computeFitness(garden, width, height):
         for j in range(0, width):
             if garden[i][j] != 0 and garden[i][j] != -1:
                 counter += 1
-            print(garden[i][j], end=" ")
-        print("\n")
-
-    print(counter)
-
     return counter
 
 
