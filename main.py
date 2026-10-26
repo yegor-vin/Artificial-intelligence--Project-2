@@ -116,10 +116,11 @@ def generateChromosomes(genesNumber, populationSize, perimeter):
 
 
 def performRake(garden, population, width, height, perimeter):
-    gardenCopy = [row.copy() for row in garden]
 
     results = []
+
     for chromosome in population:
+        gardenCopy = [row.copy() for row in garden]
         for gene in chromosome:
 
             if 0 <= gene < height:
