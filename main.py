@@ -58,25 +58,28 @@ def main():
 
     for populationSize in populations:
        population = generateChromosomes(numberOfGenes, populationSize, matrixPerimeter)
-
        fitnessValues = performRake(gardenMatrix, population, matrixWidth, matrixHeight, matrixPerimeter)
-       bestFitness = max(fitnessValues)
-       generation = 0
 
-       if bestFitness == maxFitness:
-           return population[fitnessValues.index(bestFitness)]
-
-       while bestFitness != maxFitness or generation == 15:
-           if selection == "tournament":
-               selectedPopulation = selectTournament(fitnessValues, population, 2)
-           else:
-               selectedPopulation = selectRank(fitnessValues, population)
+       geneticAlgorithm(population, fitnessValues, maxFitness, selection)
 
 
 
 
+def geneticAlgorithm(population, fitness, maxFitness, selection):
+    bestFitness = max(fitness)
+    generation = 0
 
-def geneticAlgorithm(population, fitness):
+    if bestFitness == maxFitness:
+        return population[fitness.index(bestFitness)]
+
+    while bestFitness != maxFitness or generation == 15:
+        if selection == "tournament":
+            selectedPopulation = selectTournament(fitness, population, 2)
+        else:
+            selectedPopulation = selectRank(fitness, population)
+
+
+    return bestFitness
 
 
 
@@ -109,8 +112,6 @@ def generateChromosomes(genesNumber, populationSize, perimeter):
             generatedChromosomes[i][j] = random.randint(0, perimeter - 1)
 
     return generatedChromosomes
-
-
 
 
 
@@ -238,13 +239,8 @@ def computeFitness(garden, width, height):
         for j in range(0, width):
             if garden[i][j] != 0 and garden[i][j] != -1:
                 counter += 1
+    print(counter)
     return counter
-
-
-
-
-
-
 
 
 main()
