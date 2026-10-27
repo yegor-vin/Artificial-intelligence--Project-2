@@ -60,7 +60,7 @@ def startGame():
 
     for populationSize in POPULATIONS:
        population = generateChromosomes(numberOfGenes, populationSize, matrixPerimeter)
-       fitnessValues = performRake(gardenMatrix, population, matrixWidth, matrixHeight, matrixPerimeter)
+       fitnessValues, gardens = performRake(gardenMatrix, population, matrixWidth, matrixHeight, matrixPerimeter)
 
        bestResult = geneticAlgorithm(population, fitnessValues, maxFitness, selection, matrixPerimeter, gardenMatrix, matrixWidth, matrixHeight)
 
@@ -104,17 +104,12 @@ def geneticAlgorithm(population, fitness, maxFitness, selection, perimeter, gard
 
 
 
-
-
 def mutation(population, perimeter):
     mutationProb = 0.1
     for chromosome in population:
         for i in range(len(chromosome)):
             if random.random() < mutationProb:
                 chromosome[i] = random.randint(0, perimeter - 1)
-        print(chromosome, end="\n\n")
-    print("executed and left-- mutation")
-
 
 
 
@@ -148,10 +143,9 @@ def crossover(population):
 def selectTournament(fitness, population, k=2):
     newPopulation = []
     for _ in range(len(population)):
-        chosen = random.choices(fitness, k=k)
-        newPopulation.append(population[fitness.index(max(chosen))])
-        print(population[fitness.index(max(chosen))])
-    print("executed and left-selection tournament")
+        index = random.sample(range(len(population)), k=k)
+        best = max(index, key=lambda i: fitness[i])
+        newPopulation.append(population[best][:])
     return newPopulation
 
 def selectRank(fitness, population):
@@ -160,7 +154,7 @@ def selectRank(fitness, population):
     ranks = [i + 1 for i in range(len(ordered))]
     for _ in range(len(population)):
         chosen = random.choices(ordered, weights=ranks, k=1)[0]
-        newPopulation.append(population[chosen])
+        newPopulation.append(population[chosen][:])
     return newPopulation
 
 
@@ -177,123 +171,103 @@ def generateChromosomes(genesNumber, populationSize, perimeter):
     return generatedChromosomes
 
 
+def rakeLine(g, x, y, dx, dy, width, height, mark, chromosome, t):
+    while True:
+        g[y][x] = mark
+        nextX, nextY = x + dx, y + dy
+
+        if not (0 <= nextX < width and 0 <= nextY < height):
+            return False, t
+
+        if g[nextY][nextX] == 0:
+            x, y = nextX, nextY
+            continue
+
+
+        options = []
+        for tdx, tdy in ((-dy, dx), (dy, -dx)):
+            tx, ty = x + tdx, y + tdy
+            if not (0 <= tx < width and 0 <= ty < height) or g[ty][tx] == 0:
+                options.append((tdx, tdy))
+
+        if not options:
+            return True, t
+
+        if len(options) == 2:
+            dx, dy = options[chromosome[t % len(chromosome)] % 2]
+            t += 1
+        else:
+            dx, dy = options[0]
+
+        tx, ty = x + dx, y + dy
+        if not (0 <= tx < width and 0 <= ty < height):
+            return False, t
+        x, y = tx, ty
+
+
 
 def performRake(garden, population, width, height, perimeter):
 
     results = []
+    resultGardens = []
 
     for chromosome in population:
         passNumber = 0
         gardenCopy = [row.copy() for row in garden]
+        t = 0
+        stuck = False
         for gene in chromosome:
-            passNumber += 1
 
             if 0 <= gene < height:
                 x, y = (0, gene)
 
-                if gardenCopy[y][x] != 0 or gardenCopy[y][x] == -1:
+                if gardenCopy[y][x] != 0:
                     continue
 
-                i = 0
+                passNumber += 1
 
-                while 0 <= x + i < width and 0 <= y < height:
-                    gardenCopy[y][x + i] = passNumber
-                    nextX = x+i+1
-                    nextY = y+1
-                    prevY = y-1
-                    if nextX < width and (gardenCopy[y][nextX] == -1 or gardenCopy[y][nextX] != 0):
-                        if nextY < height and (gardenCopy[y+1][x+i] != -1 and gardenCopy[y+1][x+i] == 0):
-                            y += 1
-                            gardenCopy[y][x+i] = passNumber
-                        elif prevY >= 0 and (gardenCopy[y-1][x+i] != -1 and gardenCopy[y-1][x+i] == 0):
-                            y -= 1
-                            gardenCopy[y][x+i] = passNumber
-                        else:
-                            break
-                    else:
-                        i += 1
-
+                stuck, t = rakeLine(gardenCopy, x, y, 1, 0, width, height,
+                                    passNumber, chromosome, t)
 
             elif height <= gene < perimeter // 2:
                 x, y = (gene - height, height - 1)
 
 
-                if gardenCopy[y][x] != 0 or gardenCopy[y][x] == -1:
+                if gardenCopy[y][x] != 0:
                     continue
 
-                i = 0
-                while 0 <= x < width and 0 <= y - i< height:
-                    gardenCopy[y-i][x] = passNumber
-                    nextY = y-i-1
-                    nextX = x + 1
-                    prevX = x -1
-                    if nextY >= 0 and (gardenCopy[nextY][x] == -1 or gardenCopy[nextY][x] != 0):
-                        if prevX >= 0 and (gardenCopy[y-i][x-1] != -1 and gardenCopy[y-i][x-1] == 0):
-                            x -= 1
-                            gardenCopy[y-i][x] = passNumber
-                        elif nextX < width and (gardenCopy[y - i][x+1] != -1 and gardenCopy[y - i][x+1] == 0):
-                            x += 1
-                            gardenCopy[y-i][x] = passNumber
-                        else:
-                           break
-                    else:
-                        i += 1
+                passNumber += 1
 
-
+                stuck, t = rakeLine(gardenCopy, x, y, 1, 0, width, height,
+                                    passNumber, chromosome, t)
 
             elif perimeter // 2 <= gene <  (perimeter // 2) + height:
                 x, y = (width - 1,abs((gene - perimeter // 2) - height) - 1)
 
 
-                if gardenCopy[y][x] != 0 or gardenCopy[y][x] == -1:
+                if gardenCopy[y][x] != 0:
                     continue
 
-                i = 0
-                while 0 <= x - i < width and 0 <= y < height:
-                    gardenCopy[y][x - i] = passNumber
-                    nextX = x-i-1
-                    nextY = y+1
-                    prevY = y-1
-                    if nextX >= 0 and (gardenCopy[y][nextX] == -1 or gardenCopy[y][nextX] != 0):
-                        if nextY < height and (gardenCopy[y + 1][x - i] != -1 and gardenCopy[y + 1][x - i] == 0):
-                            y += 1
-                            gardenCopy[y][x - i] = passNumber
-                        elif prevY >= 0 and (gardenCopy[y - 1][x - i] != -1 and gardenCopy[y - 1][x - i] == 0):
-                            y -= 1
-                            gardenCopy[y][x - i] = passNumber
-                        else:
-                            break
-                    else:
-                        i += 1
+                passNumber += 1
+
+                stuck, t = rakeLine(gardenCopy, x, y, 1, 0, width, height,
+                                    passNumber, chromosome, t)
 
             elif (perimeter // 2) + height <= gene < perimeter:
                 x, y = ( abs(perimeter - gene) - 1, 0)
 
 
-                if gardenCopy[y][x] != 0 or gardenCopy[y][x] == -1:
+                if gardenCopy[y][x] != 0:
                     continue
 
-                i = 0
-                while 0 <= x < width and 0 <= y + i < height:
-                    gardenCopy[y+i][x] = passNumber
-                    nextY = y+i+1
-                    nextX = x+1
-                    prevX = x-1
-                    if nextY < height and  (gardenCopy[nextY][x] == -1 or gardenCopy[nextY][x] != 0):
-                        if prevX >= 0 and (gardenCopy[y+i][x-1] != -1 and gardenCopy[y+i][x-1] == 0):
-                            x -= 1
-                            gardenCopy[y+i][x] = passNumber
-                        elif nextX < width and (gardenCopy[y + i][x+1] != -1 and gardenCopy[y + i][x+1] == 0):
-                            x += 1
-                            gardenCopy[y+i][x] = passNumber
-                        else:
-                            break
-                    else:
-                        i += 1
+                passNumber += 1
+
+                stuck, t = rakeLine(gardenCopy, x, y, 1, 0, width, height,
+                                    passNumber, chromosome, t)
 
         results.append(computeFitness(gardenCopy, width, height))
-    print("executed and left--rake")
-    return results
+        resultGardens.append(gardenCopy)
+    return results, resultGardens
 
 
 
@@ -304,7 +278,6 @@ def computeFitness(garden, width, height):
         for j in range(0, width):
             if garden[i][j] != 0 and garden[i][j] != -1:
                 counter += 1
-    print("executed and left--fitness")
     return counter
 
 
