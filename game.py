@@ -265,6 +265,9 @@ def performRake(garden, population, width, height, perimeter):
                 stuck, t = rakeLine(gardenCopy, x, y, 1, 0, width, height,
                                     passNumber, chromosome, t)
 
+            if stuck:
+                break
+
         results.append(computeFitness(gardenCopy, width, height))
         resultGardens.append(gardenCopy)
     return results, resultGardens
