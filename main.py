@@ -1,6 +1,6 @@
 from game import startGame
 def main():
-    startGame()
+    outputMatrix = startGame()
 
 
 main()

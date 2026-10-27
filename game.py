@@ -1,7 +1,8 @@
 import random
+import statistics
 
 SELECTION_METHODS = ["tournament", "rank"]
-POPULATIONS= [5]
+POPULATIONS= [15]
 
 
 def startGame():
@@ -54,7 +55,7 @@ def startGame():
 
     matrixPerimeter = (matrixWidth + matrixHeight) * 2
     maxNumberOfGenes = matrixPerimeter // 2 + numberOfStones
-    numberOfGenes =  1 if matrixWidth == 1 and matrixHeight == 1 else random.randint(4, maxNumberOfGenes)
+    numberOfGenes =  int(0.75 * maxNumberOfGenes)
     selection = SELECTION_METHODS[selectionNumber]
 
 
@@ -62,25 +63,32 @@ def startGame():
        population = generateChromosomes(numberOfGenes, populationSize, matrixPerimeter)
        fitnessValues, gardens = performRake(gardenMatrix, population, matrixWidth, matrixHeight, matrixPerimeter)
 
-       bestResult = geneticAlgorithm(population, fitnessValues, maxFitness, selection, matrixPerimeter, gardenMatrix, matrixWidth, matrixHeight)
+       if max(fitnessValues) == maxFitness:
+           return gardens[fitnessValues.index(max(fitnessValues))]
+
+       bestChromosome, bestResult, garden, history = geneticAlgorithm(population, fitnessValues, maxFitness, selection, matrixPerimeter, gardenMatrix, matrixWidth, matrixHeight, gardens)
 
 
-    print(bestResult, maxFitness)
-    return
+    return garden
 
 
 
 
-def geneticAlgorithm(population, fitness, maxFitness, selection, perimeter, gardenMatrix, width ,height):
-    bestFitness = max(fitness)
+def geneticAlgorithm(population, fitness, maxFitness, selection, perimeter, gardenMatrix, width ,height, gardens):
     generation = 0
+    maxArr , meanArr, minArr = [], [], []
 
-    if bestFitness == maxFitness:
-        return population[fitness.index(bestFitness)]
+    while True:
+        maxArr.append(max(fitness))
+        minArr.append(min(fitness))
+        meanArr.append(statistics.mean(fitness))
 
-    while bestFitness != maxFitness:
-        if generation == 20:
-            return bestFitness
+        order = sorted(range(len(population)), key=lambda i: fitness[i], reverse=True)
+        best = order[0]
+        if fitness[best] == maxFitness or generation == 100:
+            return population[best], fitness[best], gardens[best], (minArr, meanArr, maxArr)
+
+        elites = [population[i][:] for i in order[:2]]
         if selection == "tournament":
             selectedPopulation = selectTournament(fitness, population, 2)
         else:
@@ -88,17 +96,13 @@ def geneticAlgorithm(population, fitness, maxFitness, selection, perimeter, gard
 
         crossedPopulation = crossover(selectedPopulation)
         mutation(crossedPopulation, perimeter)
-        fitness = performRake(gardenMatrix, crossedPopulation, width , height, perimeter)
 
-        if bestFitness < max(fitness):
-            bestFitness = max(fitness)
+        population = elites + crossedPopulation[:len(population) - 2]
+        fitness, gardens = performRake(gardenMatrix, population, width , height, perimeter)
 
-        population = crossedPopulation
+
+
         generation += 1
-
-
-
-    return bestFitness
 
 
 
@@ -130,10 +134,6 @@ def crossover(population):
             newPopulation.extend([child1, child2])
         else:
             newPopulation.extend([population[i], population[i + 1]])
-
-    for population in newPopulation:
-        print(population, end="\n\n")
-    print("executed and left--crossover")
 
     return newPopulation
 
@@ -238,7 +238,7 @@ def performRake(garden, population, width, height, perimeter):
 
                 passNumber += 1
 
-                stuck, t = rakeLine(gardenCopy, x, y, 1, 0, width, height,
+                stuck, t = rakeLine(gardenCopy, x, y, 0, -1, width, height,
                                     passNumber, chromosome, t)
 
             elif perimeter // 2 <= gene <  (perimeter // 2) + height:
@@ -250,7 +250,7 @@ def performRake(garden, population, width, height, perimeter):
 
                 passNumber += 1
 
-                stuck, t = rakeLine(gardenCopy, x, y, 1, 0, width, height,
+                stuck, t = rakeLine(gardenCopy, x, y, -1, 0, width, height,
                                     passNumber, chromosome, t)
 
             elif (perimeter // 2) + height <= gene < perimeter:
@@ -262,7 +262,7 @@ def performRake(garden, population, width, height, perimeter):
 
                 passNumber += 1
 
-                stuck, t = rakeLine(gardenCopy, x, y, 1, 0, width, height,
+                stuck, t = rakeLine(gardenCopy, x, y, 0, 1, width, height,
                                     passNumber, chromosome, t)
 
             if stuck:
