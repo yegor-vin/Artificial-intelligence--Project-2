@@ -2,7 +2,7 @@ import random
 import statistics
 
 SELECTION_METHODS = ["tournament", "rank"]
-POPULATIONS= [15]
+POPULATIONS= [30]
 
 
 def startGame():
@@ -27,6 +27,10 @@ def startGame():
             enteredCoord = input(f"Enter coordinates of stone {i + 1} (x y): ")
             partsOfCoord = enteredCoord.split()
 
+            if len(partsOfCoord) != 2:
+                print("Invalid coordinate")
+                continue
+
 
             try:
                 x = int(partsOfCoord[0])
@@ -35,11 +39,12 @@ def startGame():
                 print("Integers must be entered")
                 continue
 
-            incorrectCoord = (not 0 <= x < matrixWidth or not 0 <= y < matrixHeight or len(partsOfCoord) != 2)
+            incorrectCoord = (not 0 <= x < matrixWidth or not 0 <= y < matrixHeight)
 
             if incorrectCoord:
                 print("Invalid coordinate")
                 continue
+
 
             stonesCoords.append((x, y))
             break
@@ -55,7 +60,7 @@ def startGame():
 
     matrixPerimeter = (matrixWidth + matrixHeight) * 2
     maxNumberOfGenes = matrixPerimeter // 2 + numberOfStones
-    numberOfGenes =  int(0.75 * maxNumberOfGenes)
+    numberOfGenes =  max(3 , int(0.75 * maxNumberOfGenes))
     selection = SELECTION_METHODS[selectionNumber]
 
 
@@ -64,6 +69,7 @@ def startGame():
        fitnessValues, gardens = performRake(gardenMatrix, population, matrixWidth, matrixHeight, matrixPerimeter)
 
        if max(fitnessValues) == maxFitness:
+           history = (min(fitnessValues), statistics.mean(fitnessValues),max(fitnessValues))
            return gardens[fitnessValues.index(max(fitnessValues))]
 
        bestChromosome, bestResult, garden, history = geneticAlgorithm(population, fitnessValues, maxFitness, selection, matrixPerimeter, gardenMatrix, matrixWidth, matrixHeight, gardens)
@@ -85,7 +91,8 @@ def geneticAlgorithm(population, fitness, maxFitness, selection, perimeter, gard
 
         order = sorted(range(len(population)), key=lambda i: fitness[i], reverse=True)
         best = order[0]
-        if fitness[best] == maxFitness or generation == 100:
+        if fitness[best] == maxFitness:
+            print(generation, fitness[best])
             return population[best], fitness[best], gardens[best], (minArr, meanArr, maxArr)
 
         elites = [population[i][:] for i in order[:2]]
@@ -283,5 +290,3 @@ def computeFitness(garden, width, height):
                 counter += 1
     return counter
 
-
-startGame()
