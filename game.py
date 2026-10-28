@@ -1,8 +1,10 @@
 import random
 import statistics
+from fitnessVisual import plotFitness
+from fitnessVisual import plotComparison
 
 SELECTION_METHODS = ["tournament", "rank"]
-POPULATIONS= [30]
+POPULATIONS= [30, 50, 100]
 
 
 def startGame():
@@ -64,18 +66,31 @@ def startGame():
     selection = SELECTION_METHODS[selectionNumber]
 
 
+    histories = {}
+    gardensFinal = {}
     for populationSize in POPULATIONS:
        population = generateChromosomes(numberOfGenes, populationSize, matrixPerimeter)
        fitnessValues, gardens = performRake(gardenMatrix, population, matrixWidth, matrixHeight, matrixPerimeter)
+       bestFitness = max(fitnessValues)
 
-       if max(fitnessValues) == maxFitness:
-           history = (min(fitnessValues), statistics.mean(fitnessValues),max(fitnessValues))
-           return gardens[fitnessValues.index(max(fitnessValues))]
+       if bestFitness == maxFitness:
+           history = ([min(fitnessValues)], [statistics.mean(fitnessValues)],[max(fitnessValues)])
 
-       bestChromosome, bestResult, garden, history = geneticAlgorithm(population, fitnessValues, maxFitness, selection, matrixPerimeter, gardenMatrix, matrixWidth, matrixHeight, gardens)
+       else:
+           bestChromosome, fitnessValues, gardens, history = geneticAlgorithm(population, fitnessValues, maxFitness, selection, matrixPerimeter, gardenMatrix, matrixWidth, matrixHeight, gardens)
+           bestFitness = max(fitnessValues)
 
 
-    return garden
+
+       histories[populationSize] = history
+       gardensFinal[bestFitness] = gardens[fitnessValues.index(bestFitness)]
+
+    plotFitness(histories, maxFitness, selection, saveTo=f"fitness-{selection}.png")
+    plotComparison(histories, maxFitness, selection, saveTo=f"comparison-{selection}.png")
+
+
+    maxKey = max(gardensFinal)
+    return gardensFinal[maxKey]
 
 
 
@@ -91,9 +106,8 @@ def geneticAlgorithm(population, fitness, maxFitness, selection, perimeter, gard
 
         order = sorted(range(len(population)), key=lambda i: fitness[i], reverse=True)
         best = order[0]
-        if fitness[best] == maxFitness:
-            print(generation, fitness[best])
-            return population[best], fitness[best], gardens[best], (minArr, meanArr, maxArr)
+        if fitness[best] == maxFitness or generation == 1000:
+            return population[best], fitness, gardens, (minArr, meanArr, maxArr)
 
         elites = [population[i][:] for i in order[:2]]
         if selection == "tournament":
