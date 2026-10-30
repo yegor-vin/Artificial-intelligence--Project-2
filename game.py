@@ -71,7 +71,7 @@ def startGame():
 
     matrixPerimeter = (matrixWidth + matrixHeight) * 2
     maxNumberOfGenes = matrixPerimeter // 2 + numberOfStones
-    numberOfGenes =  max(3 , int(0.75 * maxNumberOfGenes))
+    numberOfGenes =  max(3 , int(0.85 * maxNumberOfGenes))
     selection = SELECTION_METHODS[selectionNumber]
     mutation = MUTATION_METHODS[mutationNumber]
 
