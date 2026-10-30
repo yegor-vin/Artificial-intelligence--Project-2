@@ -4,6 +4,7 @@ from fitnessVisual import plotFitness
 from fitnessVisual import plotComparison
 
 SELECTION_METHODS = ["tournament", "rank"]
+MUTATION_METHODS = ["random", "multiplicative"]
 POPULATIONS= [30, 50, 100]
 
 
@@ -11,14 +12,22 @@ def startGame():
 
     matrixWidth = int(input("Enter garden width: "))
     matrixHeight = int(input("Enter garden height: "))
-    numberOfStones = int (input("Enter number of stones: "))
     selectionNumber = int(input("Enter selection number 0 - tournament, 1 - rank: "))
+    mutationNumber = int(input("Enter mutation number 0 - random, 1 - multiplicative: "))
+    numberOfStones = int (input("Enter number of stones: "))
 
     if selectionNumber != 0 and selectionNumber != 1:
         while True:
             print("Invalid selection number. try again")
             selectionNumber = int(input("Enter selection number 0 - tournament, 1 - rank: "))
             if selectionNumber == 0 or selectionNumber == 1:
+                break
+
+    if mutationNumber != 0 and mutationNumber != 1:
+        while True:
+            print("Invalid mutation number. try again")
+            mutationNumber = int(input("Enter mutation number 0 - random, 1 - multiplicative: "))
+            if mutationNumber == 0 or mutationNumber == 1:
                 break
 
 
@@ -64,6 +73,7 @@ def startGame():
     maxNumberOfGenes = matrixPerimeter // 2 + numberOfStones
     numberOfGenes =  max(3 , int(0.75 * maxNumberOfGenes))
     selection = SELECTION_METHODS[selectionNumber]
+    mutation = MUTATION_METHODS[mutationNumber]
 
 
     histories = {}
@@ -77,7 +87,7 @@ def startGame():
            history = ([min(fitnessValues)], [statistics.mean(fitnessValues)],[max(fitnessValues)])
 
        else:
-           bestChromosome, fitnessValues, gardens, history = geneticAlgorithm(population, fitnessValues, maxFitness, selection, matrixPerimeter, gardenMatrix, matrixWidth, matrixHeight, gardens)
+           bestChromosome, fitnessValues, gardens, history = geneticAlgorithm(population, fitnessValues, maxFitness, selection, matrixPerimeter, gardenMatrix, matrixWidth, matrixHeight, gardens, mutation)
            bestFitness = max(fitnessValues)
 
 
@@ -85,8 +95,8 @@ def startGame():
        histories[populationSize] = history
        gardensFinal[bestFitness] = gardens[fitnessValues.index(bestFitness)]
 
-    plotFitness(histories, maxFitness, selection, saveTo=f"fitness-{selection}.png")
-    plotComparison(histories, maxFitness, selection, saveTo=f"comparison-{selection}.png")
+    plotFitness(histories, maxFitness, selection, mutation, saveTo=f"fitness-{selection}-{mutation}.png")
+    plotComparison(histories, maxFitness, selection, mutation, saveTo=f"comparison-{selection}-{mutation}.png")
 
 
     maxKey = max(gardensFinal)
@@ -95,7 +105,7 @@ def startGame():
 
 
 
-def geneticAlgorithm(population, fitness, maxFitness, selection, perimeter, gardenMatrix, width ,height, gardens):
+def geneticAlgorithm(population, fitness, maxFitness, selection, perimeter, gardenMatrix, width ,height, gardens, mutation):
     generation = 0
     maxArr , meanArr, minArr = [], [], []
 
@@ -116,7 +126,7 @@ def geneticAlgorithm(population, fitness, maxFitness, selection, perimeter, gard
             selectedPopulation = selectRank(fitness, population)
 
         crossedPopulation = crossover(selectedPopulation)
-        mutation(crossedPopulation, perimeter)
+        mutationFn(crossedPopulation, perimeter, mutation)
 
         population = elites + crossedPopulation[:len(population) - 2]
         fitness, gardens = performRake(gardenMatrix, population, width , height, perimeter)
@@ -129,12 +139,23 @@ def geneticAlgorithm(population, fitness, maxFitness, selection, perimeter, gard
 
 
 
-def mutation(population, perimeter):
+def mutationFn(population, perimeter, mutation):
     mutationProb = 0.1
     for chromosome in population:
         for i in range(len(chromosome)):
             if random.random() < mutationProb:
-                chromosome[i] = random.randint(0, perimeter - 1)
+                if mutation == "random":
+                    chromosome[i] = random.randint(0, perimeter - 1)
+                else:
+                    if chromosome[i] == 0:
+                        chromosome[i] = random.randint(1, 3)
+                    else:
+                        multiplier = random.uniform(0.7, 1.3)
+                        new = round(chromosome[i] * multiplier)
+                        if new == chromosome[i]:
+                            new = chromosome[i] + 1
+
+                        chromosome[i] = min(new, perimeter - 1)
 
 
 
